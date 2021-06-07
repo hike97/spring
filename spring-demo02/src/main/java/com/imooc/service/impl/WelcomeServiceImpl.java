@@ -1,12 +1,14 @@
 package com.imooc.service.impl;
 
 import com.imooc.service.WelcomeService;
+import org.springframework.stereotype.Service;
 
 /**
  * @author hike97
  * @create 2021-06-04 21:40
  * @desc
  **/
+@Service
 public class WelcomeServiceImpl implements WelcomeService {
 
 	@Override

@@ -387,7 +387,10 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 			throws BeanDefinitionStoreException {
 
 		try {
+			//创建Document对象,xml的文档对象,就是dom树
+			//使用这个Document可以获取XML文件中的节点并且创建节点 详见 SAX XML
 			Document doc = doLoadDocument(inputSource, resource);
+			//解析dom树,即解析出一个个属性,将其保存到BeanDefinition当中,并向容器注册BeanDefinition
 			int count = registerBeanDefinitions(doc, resource);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loaded " + count + " bean definitions from " + resource);

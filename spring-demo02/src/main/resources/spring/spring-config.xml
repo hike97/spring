@@ -20,4 +20,12 @@
        http://www.springframework.org/schema/aop
        http://www.springframework.org/schema/aop/spring-aop.xsd">
 	   <bean id="welcomeService" class="com.imooc.service.impl.WelcomeServiceImpl"/>
+	   <!--1.使用无参构造函数创建-->
+	   <bean id="user1" class="com.imooc.entity.User" scope="singleton" lazy-init="true" primary="true"/>
+	   <!--2.使用静态工厂进行创建-->
+	   <bean id="user2" class="com.imooc.entity.factory.StaticFactory" factory-method="getUser" scope="singleton" />
+	   <!--3.使用实力工厂进行创建-->
+	   <bean id="userFactory" class="com.imooc.entity.factory.UserFactory"/>
+	   <bean id="user3" factory-bean="userFactory" factory-method="getUser" scope="singleton" />
+
 </beans>
