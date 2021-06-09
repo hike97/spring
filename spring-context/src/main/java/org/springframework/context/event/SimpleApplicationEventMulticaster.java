@@ -47,7 +47,7 @@ import org.springframework.util.ErrorHandler;
  * @see #setTaskExecutor
  */
 public class SimpleApplicationEventMulticaster extends AbstractApplicationEventMulticaster {
-
+    //支持多线程处理监听器
 	@Nullable
 	private Executor taskExecutor;
 
@@ -121,7 +121,10 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 		return this.errorHandler;
 	}
 
-
+	/**
+	 * ApplicationEventPublisher 的publishEvent 调用 multiCaster 的发布事件方法
+	 * @param event the event to multicast
+	 */
 	@Override
 	public void multicastEvent(ApplicationEvent event) {
 		multicastEvent(event, resolveDefaultEventType(event));
@@ -132,9 +135,11 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 		ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
 		Executor executor = getTaskExecutor();
 		for (ApplicationListener<?> listener : getApplicationListeners(event, type)) {
+			//并发
 			if (executor != null) {
 				executor.execute(() -> invokeListener(listener, event));
 			}
+			//单例
 			else {
 				invokeListener(listener, event);
 			}

@@ -262,10 +262,13 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws IllegalStateException {
+		//xml的defaultListableFactory在此方法中实例化 注解的在创建AnnotationConfigApplicationContext时的this()方法已经实例化
+		//1.此处只是更新容器的状态
 		if (!this.refreshed.compareAndSet(false, true)) {
 			throw new IllegalStateException(
 					"GenericApplicationContext does not support multiple refresh attempts: just call 'refresh' once");
 		}
+		//2.设置Bean的序列化Id
 		this.beanFactory.setSerializationId(getId());
 	}
 
