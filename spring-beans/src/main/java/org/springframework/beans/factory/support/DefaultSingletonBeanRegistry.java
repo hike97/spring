@@ -73,13 +73,16 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	/** Maximum number of suppressed exceptions to preserve. */
 	private static final int SUPPRESSED_EXCEPTIONS_LIMIT = 100;
 
-
+	//一级缓存：单例对象缓存池，beanName->Bean,其中存储的就是实例化，属性赋值成功之后的单例对象
 	/** Cache of singleton objects: bean name to bean instance. */
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
-
+    //三级缓存：单例工厂缓存，beanName->ObjectFactory 添加进去的时候实例还未具备属性
+	//用于保存beanName和创建bean的工厂之间的关系map,单例Bean在创建之初过早的暴露出去的Factory
+	//为什么采用工厂方式，因为有些bean是需要被代理的，总不能把代理前的暴露出去
 	/** Cache of singleton factories: bean name to ObjectFactory. */
 	private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
-
+	//二级缓存：早期单例对象，beanName->Bean 其中存储的是实例化之后，属性未赋值的单例对象
+	//执行了工厂方法生产出来的Bean,bean被放进去之后，那么当bean在创建过程中，就可以通过getBean方法获取到
 	/** Cache of early singleton objects: bean name to bean instance. */
 	private final Map<String, Object> earlySingletonObjects = new ConcurrentHashMap<>(16);
 
@@ -165,6 +168,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Override
 	@Nullable
 	public Object getSingleton(String beanName) {
+		//allowEarlyReference 允许非延迟加载
 		return getSingleton(beanName, true);
 	}
 
@@ -179,18 +183,26 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 		// Quick check for existing instance without full singleton lock
+		//尝试从一级缓存里面获取完备的Bean 一级缓存 singletonObjects 最终Bean形态
 		Object singletonObject = this.singletonObjects.get(beanName);
+		//一级缓存找不到完整bean 创建中的Bean的名字会被保存在SingletonCurrentlyInCreation的Set中
+		//查询是否正在创建
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			singletonObject = this.earlySingletonObjects.get(beanName);
+			//如果没有获取到并且第二个参数为true 为true则表示bean允许被循环引用
 			if (singletonObject == null && allowEarlyReference) {
 				synchronized (this.singletonObjects) {
 					// Consistent creation of early reference within full singleton lock
+					//再次确认是否从一级缓存中获取到bean
 					singletonObject = this.singletonObjects.get(beanName);
 					if (singletonObject == null) {
+						//从二级缓存中获取未赋值的bean 因为上锁 所以 二级缓存 和 三级缓存 都是hashMap 而不是concurrentHashMap
 						singletonObject = this.earlySingletonObjects.get(beanName);
 						if (singletonObject == null) {
+							//还为空 则从三级缓存singletonFactories中获取工厂实例
 							ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 							if (singletonFactory != null) {
+								//找到对象 放入二级缓存  从三级中删除 ObjectFactory 对比factoryBean
 								singletonObject = singletonFactory.getObject();
 								this.earlySingletonObjects.put(beanName, singletonObject);
 								this.singletonFactories.remove(beanName);

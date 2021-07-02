@@ -94,25 +94,33 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	 * @see org.springframework.beans.factory.FactoryBean#getObject()
 	 */
 	protected Object getObjectFromFactoryBean(FactoryBean<?> factory, String beanName, boolean shouldPostProcess) {
+		//如果需要在工厂模式下维持单例的话
 		if (factory.isSingleton() && containsSingleton(beanName)) {
 			synchronized (getSingletonMutex()) {
+				//双重检查锁机制，先从缓存中获取，防止多线程别的线程已经创建
 				Object object = this.factoryBeanObjectCache.get(beanName);
 				if (object == null) {
+					//工厂bean方法获取bean实例
 					object = doGetObjectFromFactoryBean(factory, beanName);
 					// Only post-process and store if not put there already during getObject() call above
 					// (e.g. because of circular reference processing triggered by custom getBean calls)
+					//防止异步调用造成的多实例问题
 					Object alreadyThere = this.factoryBeanObjectCache.get(beanName);
 					if (alreadyThere != null) {
 						object = alreadyThere;
 					}
 					else {
+						//如果不是spring原生类   !synthetic=true
 						if (shouldPostProcess) {
+							//该Bean实例是否已经有别的线程在尝试创建
 							if (isSingletonCurrentlyInCreation(beanName)) {
 								// Temporarily return non-post-processed object, not storing it yet..
 								return object;
 							}
+							//后置处理完成前 先加入缓存
 							beforeSingletonCreation(beanName);
 							try {
+								//触发beanPostProcessor 第三方框架可以在此用AOP来包装Bean实例
 								object = postProcessObjectFromFactoryBean(object, beanName);
 							}
 							catch (Throwable ex) {
@@ -120,10 +128,12 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 										"Post-processing of FactoryBean's singleton object failed", ex);
 							}
 							finally {
+								//创建后从缓存中清除
 								afterSingletonCreation(beanName);
 							}
 						}
 						if (containsSingleton(beanName)) {
+							//最终放入缓存，证明单例已经创建完成了
 							this.factoryBeanObjectCache.put(beanName, object);
 						}
 					}
@@ -166,6 +176,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 				}
 			}
 			else {
+				//1111111
 				object = factory.getObject();
 			}
 		}

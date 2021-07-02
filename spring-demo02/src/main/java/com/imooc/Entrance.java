@@ -19,7 +19,7 @@ import java.util.Arrays;
 @Configuration
 @ComponentScan("com.imooc")
 public class Entrance {
-	public static void main1 (String[] args) {
+	public static void main (String[] args) {
 		System.out.println ("hello world");
 		String xmlPath = "E:\\idea_workspace_2021\\spring-framework-5.2.15.RELEASE\\spring-demo02\\src\\main\\resources\\spring\\spring-config.xml";
 		ApplicationContext applicationContext = new FileSystemXmlApplicationContext (xmlPath);
@@ -29,7 +29,7 @@ public class Entrance {
 		System.out.println (Arrays.toString (names));
 	}
 
-	public static void main (String[] args) {
+	public static void main1 (String[] args) {
 		AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext (Entrance.class);
 //		String[] names = applicationContext.getBeanDefinitionNames ();
 //		for (String name : names) {
