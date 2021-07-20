@@ -239,7 +239,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		this.earlyProxyReferences.put(cacheKey, bean);
 		return wrapIfNecessary(bean, beanName, cacheKey);
 	}
-
+	//bpp.before
 	@Override
 	public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) {
 		Object cacheKey = getCacheKey(beanClass, beanName);
@@ -467,7 +467,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (advisorsPreFiltered()) {
 			proxyFactory.setPreFiltered(true);
 		}
-
+		//创建代理类
 		return proxyFactory.getProxy(getProxyClassLoader());
 	}
 

@@ -155,7 +155,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 
 	static {
-		// Eagerly load the ContextClosedEvent class to avoid weird classloader issues
+		// 优先加载 ContextClosedEvent 类以避免奇怪的类加载器问题
 		// on application shutdown in WebLogic 8.1. (Reported by Dustin Woods.)
 		ContextClosedEvent.class.getName();
 	}
@@ -163,7 +163,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/** Logger used by this class. Available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
-
+	/*
+	 * 创建上下文的唯一标识
+	 */
 	/** Unique id for this context, if any. */
 	private String id = ObjectUtils.identityToString(this);
 
@@ -189,7 +191,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/** Flag that indicates whether this context has been closed already. */
 	private final AtomicBoolean closed = new AtomicBoolean();
-
+	//锁 刷新和销毁
 	/** Synchronization monitor for the "refresh" and "destroy". */
 	private final Object startupShutdownMonitor = new Object();
 
@@ -228,6 +230,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Create a new AbstractApplicationContext with no parent.
 	 */
 	public AbstractApplicationContext() {
+		//创建资源模式处理器
 		this.resourcePatternResolver = getResourcePatternResolver();
 	}
 
@@ -457,6 +460,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see org.springframework.core.io.support.PathMatchingResourcePatternResolver
 	 */
 	protected ResourcePatternResolver getResourcePatternResolver() {
+		//创建一个资源模式解析器（其实就是用来解析xml配置文件）
 		return new PathMatchingResourcePatternResolver(this);
 	}
 
@@ -477,6 +481,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	public void setParent(@Nullable ApplicationContext parent) {
 		this.parent = parent;
 		if (parent != null) {
+			//如果父容器可配置 则合并父子容器 getParentBeanFactory
 			Environment parentEnvironment = parent.getEnvironment();
 			if (parentEnvironment instanceof ConfigurableEnvironment) {
 				getEnvironment().merge((ConfigurableEnvironment) parentEnvironment);
@@ -520,26 +525,41 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		synchronized (this.startupShutdownMonitor) {
 			// Prepare this context for refreshing.
 			//调用容器准备刷新的方法，获取容器的当时时间，同时给容器设置同步标识，具体方法
+			/**
+			 * 1.设置容器启动时间
+			 * 2.设置活跃状态为true
+			 * 3.设置关闭状态为false
+			 * 4.获取Environment对象，并加载当前系统属性值到Environment对象中
+			 * 5.准备监听器和事件的集合对象，默认为空的集合
+			 */
 			prepareRefresh();
 
-
+			//创建容器对象:DefaultListableBeanFactory
 			//告诉子类启动refreshBeanFactory()的方法,Bean定义资源文件的载入从子类的refreshBeanFactory()方法启动,里面有抽象方法
 			//针对xml配置,最终创建内部容器,该容器负责Bean的创建和管理
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
-			//为刷新容器做好准备
+			//为刷新容器做好准备 给Bean工厂设置初始化属性值
 			prepareBeanFactory(beanFactory);
 
 			try {
-				//允许在容器子类注册postProcessor钩子方法
+				//允许在容器子类注册postProcessor钩子方法 拓展
 				postProcessBeanFactory(beanFactory);
 				/**
-				 * beanFactoryPostProcessor
+				 * 执行beanFactoryPostProcessor
 				 */
 				// 方法描述应用中所有BeanDefinition并注册到容器中
 				// Invoke factory processors registered as beans in the context. 激活在容器中注册bean的BeanFactoryPostProcessors
 				invokeBeanFactoryPostProcessors(beanFactory);
+				/********************************************
+				 *   为Bean的实例化进行的准备工作
+				 *   1.注册bfpp
+				 *   2.国际化
+				 *   3.初始化监听器 广播器
+				 *   4.onRefresh 拓展
+				 *   5.注册监听器
+				 ******************************************************/
 				/**
 				 * beanPostProcessor
 				 */
@@ -550,6 +570,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				initMessageSource();
                  //Initialize event multicaster for this context. 初始化ApplicationEventMulticaster该类作为事件发布者
 				//可以存储所有事件监听者信息，并根据不同的事件，通知不同的事件监听者
+				/**
+				 * 监听器|广播器
+				 */
 				initApplicationEventMulticaster();
 
 				//预留给AbstractApplicationContext的子类用于初始化其他特殊的bean 该方法需要在所有单例Bean初始化之前调用 比如Web容器就会去初始化一些和主题战事相关的Bean(ThemeSource)
@@ -558,7 +581,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				//注册监听器的bean并注册它们
 				//简单
  				registerListeners();
-
+                /***********************************************
+				 * 准备完毕准备进行初始化 操作
+				 * *********************************************/
 				//设置自定义的类型转化器ConversionService
 				//设置自定义AOP相关的类LoadTimeWeaverAware
 				//清除临时的ClassLoader
@@ -600,9 +625,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void prepareRefresh() {
 		// Switch to active.
-		// 1.设置容器时间
+		// 1.设置容器启动时间
 		this.startupDate = System.currentTimeMillis();
+		// 容器的关闭标志位
 		this.closed.set(false);
+		// 容器的激活标志位
 		this.active.set(true);
 
 		if (logger.isDebugEnabled()) {
@@ -615,26 +642,29 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize any placeholder property sources in the context environment.
-		//2.初始化Environment的propertySources属性
+		//2.留给子类覆盖，初始化属性资源
 		//样例 <context:property-placeholder location="classpath:db.properties"/>
 		initPropertySources();
 
-		// 3校验Environment 的requiredProperties是否 存在
+		//3.校验Environment 的requiredProperties是否 存在
+		// 创建并获取环境对象，验证需要的属性文件是否已经放入到环境中
 		// 参考 ConfigurablePropertyResolver#setRequiredProperties
 		getEnvironment().validateRequiredProperties();
 
 		// Store pre-refresh ApplicationListeners...
+		//判断刷新前的应用程序监听器集合是否为空，如果为空，则将监听器添加到此集合中
 		if (this.earlyApplicationListeners == null) {
 			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
 		}
 		else {
 			// Reset local application listeners to pre-refresh state.
+			//如果不等于空，则清空集合元素对象
 			this.applicationListeners.clear();
 			this.applicationListeners.addAll(this.earlyApplicationListeners);
 		}
 
 		// Allow for the collection of early ApplicationEvents,
-		// 创建事件集合
+		//创建刷新前的监听事件集合
 		this.earlyApplicationEvents = new LinkedHashSet<>();
 	}
 
@@ -654,6 +684,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #getBeanFactory()
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+		//创建新的Bean工厂
 		refreshBeanFactory();
 		return getBeanFactory();
 	}
@@ -666,14 +697,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 		// 告诉内部 bean 工厂使用容器的类加载器。
 		beanFactory.setBeanClassLoader(getClassLoader());
-		//为容器设置表达式语言处理器 spring3开始支持 默认可使用#{bean.xxx}的形式来调用相关属性值
+		//为容器设置表达式语言处理器 spring3开始支持 默认可使用#{bean.xxx}的形式来调用相关属性值 SPel
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
 		//添加一个默认的PropertyEditor
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		//添加该处理器的作用:当Bean实现ApplicationContextAware时将容器注入ApplicationContext对象
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
-        //Spring会通过其他方式来处理这些依赖
+        //Spring会通过其他方式来处理这些依赖 忽略aware接口
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
 		beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
@@ -743,6 +774,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Instantiate and register all BeanPostProcessor beans,
 	 * respecting explicit order if given.
 	 * <p>Must be called before any instantiation of application beans.
+	 * 实例化并注册所有 BeanPostProcessor bean
 	 */
 	protected void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory) {
 		PostProcessorRegistrationDelegate.registerBeanPostProcessors(beanFactory, this);
@@ -886,7 +918,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 					beanFactory.getBean(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class));
 		}
 		/**
-		 * 解析器
+		 * 解析器 值处理器
 		 */
 		// 2.如果没有 BeanFactoryPostProcessor，则注册一个默认的内嵌解析器
 		//（例如：PropertySourcesPlaceholderConfigurer bean） @Value 注解或在xml中使用${}的方式进行相关的配置

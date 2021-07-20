@@ -173,7 +173,7 @@ public class PluggableSchemaResolver implements EntityResolver {
 		return schemaMappings;
 	}
 
-
+	//toString 方法中  调用了getSchemaMappings 方法
 	@Override
 	public String toString() {
 		return "EntityResolver using schema mappings " + getSchemaMappings();

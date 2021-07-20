@@ -66,6 +66,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * <p>If not set, the implementation may use a default as appropriate.
 	 */
 	public void setConfigLocation(String location) {
+		//设置配置文件
 		setConfigLocations(StringUtils.tokenizeToStringArray(location, CONFIG_LOCATION_DELIMITERS));
 	}
 

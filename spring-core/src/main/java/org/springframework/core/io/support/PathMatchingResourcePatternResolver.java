@@ -202,7 +202,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
 
 	private final ResourceLoader resourceLoader;
-
+	//创建蚂蚁表达式
 	private PathMatcher pathMatcher = new AntPathMatcher();
 
 

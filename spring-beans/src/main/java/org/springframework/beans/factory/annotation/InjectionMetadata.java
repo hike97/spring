@@ -65,11 +65,11 @@ public class InjectionMetadata {
 		}
 	};
 
-
+	//目标Class
 	private final Class<?> targetClass;
-
+	//保存了被注入元素的全量集合
 	private final Collection<InjectedElement> injectedElements;
-
+	//和injectedElements 一样 只保存spring默认进行处理的属性或者方法
 	@Nullable
 	private volatile Set<InjectedElement> checkedElements;
 
@@ -165,11 +165,11 @@ public class InjectionMetadata {
 	 * A single injected element.
 	 */
 	public abstract static class InjectedElement {
-
+		//被注解标记的成员 field还是Method
 		protected final Member member;
-
+		//是否为Field被注入
 		protected final boolean isField;
-
+		//属性描述 javabeans中的接口
 		@Nullable
 		protected final PropertyDescriptor pd;
 
